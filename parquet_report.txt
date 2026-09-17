@@ -1,0 +1,149 @@
+============================================================
+BASIC INFORMATION
+============================================================
+file: data\raw\compound_profiles.parquet
+rows: 803853
+columns: 741
+row groups: 1
+
+============================================================
+COLUMN INFORMATION
+============================================================
+metadata column number: 4
+feature column number: 737
+
+metadata columns:
+Metadata_Source
+Metadata_Plate
+Metadata_Well
+Metadata_JCP2022
+
+first 20 feature columns:
+X_1
+X_2
+X_3
+X_4
+X_5
+X_6
+X_7
+X_8
+X_9
+X_10
+X_11
+X_12
+X_13
+X_14
+X_15
+X_16
+X_17
+X_18
+X_19
+X_20
+
+last 20 feature columns:
+X_718
+X_719
+X_720
+X_721
+X_722
+X_723
+X_724
+X_725
+X_726
+X_727
+X_728
+X_729
+X_730
+X_731
+X_732
+X_733
+X_734
+X_735
+X_736
+X_737
+
+============================================================
+FEATURE DATA TYPES
+============================================================
+numeric feature number: 737
+non-numeric feature number: 0
+
+============================================================
+READING METADATA
+============================================================
+metadata shape: (803853, 4)
+
+============================================================
+FIRST 5 METADATA ROWS
+============================================================
+  Metadata_Source Metadata_Plate Metadata_Well Metadata_JCP2022
+0        source_2     1053597806           A01   JCP2022_085227
+1        source_2     1053597806           K22   JCP2022_049123
+2        source_2     1053597806           K21   JCP2022_025146
+3        source_2     1053597806           K20   JCP2022_109006
+4        source_2     1053597806           K19   JCP2022_040739
+
+============================================================
+METADATA UNIQUE COUNTS
+============================================================
+Metadata_Source: unique=10, missing=0
+Metadata_Plate: unique=1713, missing=0
+Metadata_Well: unique=1536, missing=0
+Metadata_JCP2022: unique=115795, missing=0
+
+============================================================
+POSSIBLE COMPOUND ID COLUMNS
+============================================================
+Metadata_JCP2022
+
+============================================================
+COMPOUND / PHENOTYPE RELATIONSHIP
+============================================================
+compound ID column used: Metadata_JCP2022
+non-null rows: 803853
+unique compounds: 115795
+compounds appearing more than once: 115789
+compounds appearing only once: 6
+
+phenotype profiles per compound:
+count    115795.000000
+mean          6.942035
+std         282.157900
+min           1.000000
+25%           4.000000
+50%           5.000000
+75%           7.000000
+90%           8.000000
+95%           8.000000
+99%          12.000000
+max       93552.000000
+
+20 compounds with the most profiles:
+Metadata_JCP2022
+JCP2022_033924    93552
+JCP2022_050797     7893
+JCP2022_025848     7891
+JCP2022_046054     7887
+JCP2022_037716     7760
+JCP2022_064022     7754
+JCP2022_012818     7735
+JCP2022_085227     7332
+JCP2022_035095     6173
+JCP2022_033954     1592
+JCP2022_033914      297
+JCP2022_013856      293
+JCP2022_001036      291
+JCP2022_105442      290
+JCP2022_032771      290
+JCP2022_080920      289
+JCP2022_060040      289
+JCP2022_073628      289
+JCP2022_046462      288
+JCP2022_056401      288
+
+============================================================
+EXPERIMENT-RELATED METADATA
+============================================================
+Metadata_Source: 10 unique values
+Metadata_Plate: 1713 unique values
+Metadata_Well: 1536 unique values
