@@ -2,7 +2,7 @@
 
 A small PyTorch project for learning a shared embedding space between molecular structures and cell-phenotype profiles with a dual-encoder contrastive-learning model.
 
-This repository records the project step by step so that the baseline, evaluation pipeline, and later optimization process remain visible in Git history.
+This repository records the project step by step so that the baseline, evaluation pipeline, tuning process, and later research experiments remain visible in Git history.
 
 ## Pipeline
 
@@ -15,25 +15,28 @@ This repository records the project step by step so that the baseline, evaluatio
 7. Train two MLP encoders with a symmetric contrastive loss.
 8. Select the best checkpoint using validation loss.
 9. Evaluate cross-modal retrieval in both directions with Recall@1 / Recall@5 / Recall@10.
+10. Tune the vanilla baseline with controlled one-variable-at-a-time experiments.
 
 ## Project structure
 
 ```text
 drug_contrastive_learning/
 ├── data/
-│   ├── preprocess.py          # SMILES -> Morgan fingerprints
-│   ├── pairs.py               # build paired molecular/phenotype data
-│   ├── raw/                   # raw datasets (not tracked by Git)
-│   └── processed/             # generated .npz files (not tracked by Git)
+│   ├── preprocess.py
+│   ├── pairs.py
+│   ├── raw/
+│   └── processed/
+├── experiments/
+│   └── baseline_tuning.md
 ├── src/
-│   ├── data.py                # split data and build DataLoaders
-│   ├── model.py               # MLP encoders and DualEncoder
-│   ├── loss.py                # symmetric contrastive loss
-│   ├── train.py               # training + validation + best checkpoint
-│   ├── evaluate.py            # bidirectional retrieval evaluation
-│   └── main.py                # switch between train and evaluate modes
-├── test.py                    # parquet structure/statistics inspection script
-├── parquet_report.txt         # dataset structure report from the inspection step
+│   ├── data.py
+│   ├── model.py
+│   ├── loss.py
+│   ├── train.py
+│   ├── evaluate.py
+│   └── main.py
+├── test.py
+├── parquet_report.txt
 └── .gitignore
 ```
 
@@ -68,19 +71,7 @@ python pairs.py
 cd ..
 ```
 
-In `src/main.py`, set:
-
-```python
-mode = "train"
-```
-
-to train and save the best checkpoint, or:
-
-```python
-mode = "evaluate"
-```
-
-to load `best_model.pt` and run retrieval evaluation.
+In `src/main.py`, set `mode = "train"` to train and save the best checkpoint, or `mode = "evaluate"` to load `best_model.pt` and run retrieval evaluation.
 
 Then run:
 
@@ -88,34 +79,30 @@ Then run:
 python src/main.py
 ```
 
-## Baseline configuration
+## Tuned vanilla baseline
 
-- Molecular input dimension: 2048
-- Phenotype input dimension: 737
+After controlled hyperparameter experiments, the current baseline uses:
+
 - Hidden dimension: 512
 - Embedding dimension: 128
-- Batch size: 32
+- Batch size: 256
 - Learning rate: 0.001
+- Weight decay: 0.0001
+- Dropout: 0
+- Temperature: 0.05
 - Optimizer: Adam
-- Epochs: 5
-- First run device: CPU
+- Epochs: 20 with best-checkpoint selection by validation loss
 
-Validation loss was lowest around epoch 3 in the first 5-epoch run, so the evaluation uses the saved best checkpoint instead of the final epoch.
-
-## Retrieval results
-
-Test set size: 11,569 paired samples.
+Best-checkpoint retrieval for the selected configuration:
 
 | Direction | Recall@1 | Recall@5 | Recall@10 |
 | --- | ---: | ---: | ---: |
-| Molecule -> Phenotype | 0.0075 | 0.0265 | 0.0411 |
-| Phenotype -> Molecule | 0.0066 | 0.0237 | 0.0392 |
+| Molecule -> Phenotype | 0.0112 | 0.0364 | 0.0558 |
+| Phenotype -> Molecule | 0.0109 | 0.0333 | 0.0508 |
 
-These results are the first retrieval baseline and will be used as the reference point for later model and hyperparameter optimization.
+The full tuning history is recorded in [`experiments/baseline_tuning.md`](experiments/baseline_tuning.md). These are single-run tuning results; multi-seed robustness tests are intentionally reserved for a later stage.
 
 ## Dependencies
-
-Main Python packages used by the current code:
 
 ```text
 numpy
@@ -133,7 +120,9 @@ torch
 - [x] Train / validation / test split
 - [x] First real-data dual-encoder training run
 - [x] Validation-based best-model saving
-- [x] Test-set embedding generation
 - [x] Bidirectional retrieval evaluation
 - [x] Recall@1 / Recall@5 / Recall@10 baseline
-- [ ] Training-speed and hyperparameter optimization
+- [x] Controlled vanilla-baseline hyperparameter tuning
+- [ ] False-negative analysis
+- [ ] Phenotype-aware contrastive loss
+- [ ] Ablation and robustness experiments
