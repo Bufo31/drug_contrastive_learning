@@ -1,11 +1,11 @@
 from train import train
 from evaluate import evaluate
 
-epochs = 5
-batch_size = 32
-learning_rate = 0.001
+epochs = 20
+batch_size = 256
+learning_rate = 1e-3
 
-mode = "evaluate"
+mode = "train"
 
 if mode == "train":
     train(epochs,batch_size,learning_rate)
