@@ -5,7 +5,7 @@ from model import DualEncoder
 from loss import contrastive_loss
 
 
-def train(epochs = 20, batch = 32, lr = 0.001):
+def train(epochs = 20, batch = 32, lr = 1e-3):
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -25,7 +25,7 @@ def train(epochs = 20, batch = 32, lr = 0.001):
     model = DualEncoder(mol_dim, ph_dim)
     model = model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-4)
 
     best_val_loss = float("inf")
 
@@ -45,7 +45,6 @@ def train(epochs = 20, batch = 32, lr = 0.001):
             total_loss += loss.item()
 
         avg_loss = total_loss / len(train_loader)
-
 
         model.eval()
         val_total_loss = 0
