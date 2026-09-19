@@ -27,6 +27,8 @@ def train(epochs = 20, batch = 32, lr = 0.001):
 
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 
+    best_val_loss = float("inf")
+
     for epoch in range(epochs):
         model.train()
         total_loss = 0
@@ -36,19 +38,32 @@ def train(epochs = 20, batch = 32, lr = 0.001):
             x_ph = x_ph.to(device)
 
             optimizer.zero_grad()
-
             z_mol, z_ph = model(x_mol, x_ph)
-
             loss = contrastive_loss(z_mol, z_ph)
-
             loss.backward()
-
             optimizer.step()
-
             total_loss += loss.item()
 
         avg_loss = total_loss / len(train_loader)
 
-        print(f"epoch: {epoch+1}/{epochs}, avg_loss:", avg_loss)
+
+        model.eval()
+        val_total_loss = 0
+
+        with torch.no_grad():
+            for x_mol, x_ph in val_loader:
+                x_mol = x_mol.to(device)
+                x_ph = x_ph.to(device)
+                z_mol, z_ph = model(x_mol, x_ph)
+                val_loss = contrastive_loss(z_mol, z_ph)
+                val_total_loss += val_loss.item()
+
+        val_avg_loss = val_total_loss / len(val_loader)
+
+        if val_avg_loss < best_val_loss:
+            best_val_loss = val_avg_loss
+            torch.save(model.state_dict(),"best_model.pt")
+
+        print(f"epoch: {epoch+1}/{epochs}, train_loss: {avg_loss}, val_loss: {val_avg_loss}")
 
     return model

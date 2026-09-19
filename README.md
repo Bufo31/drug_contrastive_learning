@@ -2,7 +2,7 @@
 
 A small PyTorch project for learning a shared embedding space between molecular structures and cell-phenotype profiles with a dual-encoder contrastive-learning model.
 
-This repository currently records the first working **baseline** on real paired data. Later evaluation and retrieval improvements will be added as separate commits so that the development process remains visible in Git history.
+This repository records the project step by step so that the baseline, evaluation pipeline, and later optimization process remain visible in Git history.
 
 ## Pipeline
 
@@ -13,6 +13,8 @@ This repository currently records the first working **baseline** on real paired 
 5. Match molecular fingerprints with phenotype vectors.
 6. Split paired samples into train / validation / test sets (80% / 10% / 10%).
 7. Train two MLP encoders with a symmetric contrastive loss.
+8. Select the best checkpoint using validation loss.
+9. Evaluate cross-modal retrieval in both directions with Recall@1 / Recall@5 / Recall@10.
 
 ## Project structure
 
@@ -27,8 +29,9 @@ drug_contrastive_learning/
 │   ├── data.py                # split data and build DataLoaders
 │   ├── model.py               # MLP encoders and DualEncoder
 │   ├── loss.py                # symmetric contrastive loss
-│   ├── train.py               # training loop
-│   └── main.py                # baseline training entry point
+│   ├── train.py               # training + validation + best checkpoint
+│   ├── evaluate.py            # bidirectional retrieval evaluation
+│   └── main.py                # switch between train and evaluate modes
 ├── test.py                    # parquet structure/statistics inspection script
 ├── parquet_report.txt         # dataset structure report from the inspection step
 └── .gitignore
@@ -36,7 +39,7 @@ drug_contrastive_learning/
 
 ## Data
 
-Large raw and processed data files are intentionally excluded from GitHub.
+Large raw datasets, generated `.npz` files, and model checkpoints are intentionally excluded from GitHub.
 
 Place the raw files under:
 
@@ -52,11 +55,11 @@ data/processed/compound_fingerprints.npz
 data/processed/paired_data.npz
 ```
 
-The phenotype table used in this baseline contains 737 numeric phenotype features. Molecular inputs are 2048-dimensional Morgan fingerprints.
+The phenotype table contains 737 numeric phenotype features. Molecular inputs are 2048-dimensional Morgan fingerprints.
 
-## Running the baseline
+## Running
 
-The current preprocessing scripts use paths relative to the `data/` directory:
+Run preprocessing from the `data/` directory:
 
 ```bash
 cd data
@@ -65,7 +68,21 @@ python pairs.py
 cd ..
 ```
 
-Then start training from the project root:
+In `src/main.py`, set:
+
+```python
+mode = "train"
+```
+
+to train and save the best checkpoint, or:
+
+```python
+mode = "evaluate"
+```
+
+to load `best_model.pt` and run retrieval evaluation.
+
+Then run:
 
 ```bash
 python src/main.py
@@ -81,19 +98,20 @@ python src/main.py
 - Learning rate: 0.001
 - Optimizer: Adam
 - Epochs: 5
-- Device used for the first run: CPU
+- First run device: CPU
 
-First successful real-data training run:
+Validation loss was lowest around epoch 3 in the first 5-epoch run, so the evaluation uses the saved best checkpoint instead of the final epoch.
 
-```text
-Epoch 1: 2.9540
-Epoch 2: 2.4127
-Epoch 3: 1.9290
-Epoch 4: 1.4891
-Epoch 5: 1.1487
-```
+## Retrieval results
 
-These values are training losses only. Validation, test-set evaluation, and retrieval metrics are planned as later stages rather than being reported as baseline performance.
+Test set size: 11,569 paired samples.
+
+| Direction | Recall@1 | Recall@5 | Recall@10 |
+| --- | ---: | ---: | ---: |
+| Molecule -> Phenotype | 0.0075 | 0.0265 | 0.0411 |
+| Phenotype -> Molecule | 0.0066 | 0.0237 | 0.0392 |
+
+These results are the first retrieval baseline and will be used as the reference point for later model and hyperparameter optimization.
 
 ## Dependencies
 
@@ -114,6 +132,8 @@ torch
 - [x] Molecular / phenotype pairing
 - [x] Train / validation / test split
 - [x] First real-data dual-encoder training run
-- [ ] Validation and test evaluation
-- [ ] Retrieval metrics
+- [x] Validation-based best-model saving
+- [x] Test-set embedding generation
+- [x] Bidirectional retrieval evaluation
+- [x] Recall@1 / Recall@5 / Recall@10 baseline
 - [ ] Training-speed and hyperparameter optimization
