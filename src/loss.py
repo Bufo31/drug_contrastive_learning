@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-def contrastive_loss(z_mol,z_ph,temperature = 0.07):
+def contrastive_loss(z_mol,z_ph,temperature = 0.05):
 
     similarity = z_mol @ z_ph.T
     similarity = similarity / temperature
