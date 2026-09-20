@@ -16,6 +16,7 @@ This repository records the project step by step so that the baseline, evaluatio
 8. Select the best checkpoint using validation loss.
 9. Evaluate cross-modal retrieval in both directions with Recall@1 / Recall@5 / Recall@10.
 10. Tune the vanilla baseline with controlled one-variable-at-a-time experiments.
+11. Analyze potential false negatives by comparing phenotype similarity with learned cross-modal similarity.
 
 ## Project structure
 
@@ -27,7 +28,8 @@ drug_contrastive_learning/
 │   ├── raw/
 │   └── processed/
 ├── experiments/
-│   └── baseline_tuning.md
+│   ├── baseline_tuning.md
+│   └── false_negative_analysis.md
 ├── src/
 │   ├── data.py
 │   ├── model.py
@@ -35,6 +37,7 @@ drug_contrastive_learning/
 │   ├── train.py
 │   ├── evaluate.py
 │   └── main.py
+├── false_negative.py
 ├── test.py
 ├── parquet_report.txt
 └── .gitignore
@@ -79,6 +82,12 @@ Then run:
 python src/main.py
 ```
 
+Run the false-negative analysis from the project root:
+
+```bash
+python false_negative.py
+```
+
 ## Tuned vanilla baseline
 
 After controlled hyperparameter experiments, the current baseline uses:
@@ -102,6 +111,25 @@ Best-checkpoint retrieval for the selected configuration:
 
 The full tuning history is recorded in [`experiments/baseline_tuning.md`](experiments/baseline_tuning.md). These are single-run tuning results; multi-seed robustness tests are intentionally reserved for a later stage.
 
+## False-negative analysis
+
+A fixed random sample of 5,000 compounds was used to examine whether all non-matching pairs should be treated as equally strong negatives.
+
+Highly similar phenotype pairs were rare: 3,326 pairs had cosine similarity above 0.7, 605 above 0.8, and 56 above 0.9. At the same time, the mean learned cross-modal similarity increased as the phenotype-similarity threshold became stricter:
+
+| Phenotype condition | Mean model similarity |
+| --- | ---: |
+| All non-matching negatives | 0.2867 |
+| Phenotype similarity > 0.3 | 0.3391 |
+| > 0.5 | 0.3783 |
+| > 0.7 | 0.4741 |
+| > 0.8 | 0.5190 |
+| > 0.9 | 0.5646 |
+
+The observation is that phenotype-similar non-matching pairs tend to remain closer in the learned embedding space than ordinary negatives. This motivates testing whether phenotype-similar negatives should receive weaker negative pressure, but it does not by itself show that a modified loss will improve retrieval.
+
+Full results and experiment logic are recorded in [`experiments/false_negative_analysis.md`](experiments/false_negative_analysis.md).
+
 ## Dependencies
 
 ```text
@@ -123,6 +151,6 @@ torch
 - [x] Bidirectional retrieval evaluation
 - [x] Recall@1 / Recall@5 / Recall@10 baseline
 - [x] Controlled vanilla-baseline hyperparameter tuning
-- [ ] False-negative analysis
+- [x] False-negative analysis
 - [ ] Phenotype-aware contrastive loss
 - [ ] Ablation and robustness experiments
