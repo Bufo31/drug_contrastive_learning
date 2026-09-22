@@ -17,6 +17,9 @@ This repository records the project step by step so that the baseline, evaluatio
 9. Evaluate cross-modal retrieval in both directions with Recall@1 / Recall@5 / Recall@10.
 10. Tune the vanilla baseline with controlled one-variable-at-a-time experiments.
 11. Analyze potential false negatives by comparing phenotype similarity with learned cross-modal similarity.
+12. Test phenotype-aware negative weighting.
+13. Test structure-aware negative weighting.
+14. Compare the modified losses with the vanilla baseline across three random seeds.
 
 ## Project structure
 
@@ -29,7 +32,8 @@ drug_contrastive_learning/
 │   └── processed/
 ├── experiments/
 │   ├── baseline_tuning.md
-│   └── false_negative_analysis.md
+│   ├── false_negative_analysis.md
+│   └── similarity_aware_loss.md
 ├── src/
 │   ├── data.py
 │   ├── model.py
@@ -74,7 +78,12 @@ python pairs.py
 cd ..
 ```
 
-In `src/main.py`, set `mode = "train"` to train and save the best checkpoint, or `mode = "evaluate"` to load `best_model.pt` and run retrieval evaluation.
+In the current `src/main.py`, set:
+
+```text
+mode = "1"   # train
+mode = "2"   # evaluate
+```
 
 Then run:
 
@@ -88,9 +97,11 @@ Run the false-negative analysis from the project root:
 python false_negative.py
 ```
 
+The training script was kept intentionally simple during experimentation. The active loss can be changed directly in `src/train.py`; the current uploaded version contains the vanilla, phenotype-aware, and structure-aware loss implementations and is set to the latest structure-aware experiment.
+
 ## Tuned vanilla baseline
 
-After controlled hyperparameter experiments, the current baseline uses:
+After controlled hyperparameter experiments, the baseline configuration uses:
 
 - Hidden dimension: 512
 - Embedding dimension: 128
@@ -100,16 +111,15 @@ After controlled hyperparameter experiments, the current baseline uses:
 - Dropout: 0
 - Temperature: 0.05
 - Optimizer: Adam
-- Epochs: 20 with best-checkpoint selection by validation loss
 
-Best-checkpoint retrieval for the selected configuration:
+Best-checkpoint retrieval for the selected single-run configuration:
 
 | Direction | Recall@1 | Recall@5 | Recall@10 |
 | --- | ---: | ---: | ---: |
 | Molecule -> Phenotype | 0.0112 | 0.0364 | 0.0558 |
 | Phenotype -> Molecule | 0.0109 | 0.0333 | 0.0508 |
 
-The full tuning history is recorded in [`experiments/baseline_tuning.md`](experiments/baseline_tuning.md). These are single-run tuning results; multi-seed robustness tests are intentionally reserved for a later stage.
+The full tuning history is recorded in [`experiments/baseline_tuning.md`](experiments/baseline_tuning.md).
 
 ## False-negative analysis
 
@@ -126,9 +136,49 @@ Highly similar phenotype pairs were rare: 3,326 pairs had cosine similarity abov
 | > 0.8 | 0.5190 |
 | > 0.9 | 0.5646 |
 
-The observation is that phenotype-similar non-matching pairs tend to remain closer in the learned embedding space than ordinary negatives. This motivates testing whether phenotype-similar negatives should receive weaker negative pressure, but it does not by itself show that a modified loss will improve retrieval.
+The observation is that phenotype-similar non-matching pairs tend to remain closer in the learned embedding space than ordinary negatives. This motivated testing weaker negative pressure for similar pairs.
 
-Full results and experiment logic are recorded in [`experiments/false_negative_analysis.md`](experiments/false_negative_analysis.md).
+Full results are recorded in [`experiments/false_negative_analysis.md`](experiments/false_negative_analysis.md).
+
+## Similarity-aware loss experiments
+
+Two conservative negative-reweighting strategies were tested:
+
+- **Phenotype-aware:** phenotype-similar non-matching pairs receive weaker negative pressure.
+- **Structure-aware:** molecules with higher Morgan-fingerprint Tanimoto similarity receive weaker negative pressure.
+
+Both use the same general idea:
+
+```text
+weight = 1 - alpha * similarity^gamma
+```
+
+with `alpha=0.25`, `gamma=2`, and the positive diagonal kept at weight 1.
+
+Three-seed robustness results are summarized below. The values are mean +/- sample standard deviation.
+
+| Metric | Vanilla | Phenotype-aware | Structure-aware |
+| --- | ---: | ---: | ---: |
+| Mol->Ph R@1 | 0.0098 +/- 0.0003 | 0.0096 +/- 0.0015 | 0.0104 +/- 0.0011 |
+| Mol->Ph R@5 | 0.0334 +/- 0.0017 | 0.0333 +/- 0.0013 | 0.0330 +/- 0.0038 |
+| Mol->Ph R@10 | 0.0539 +/- 0.0021 | 0.0531 +/- 0.0019 | 0.0520 +/- 0.0046 |
+| Ph->Mol R@1 | 0.0102 +/- 0.0003 | 0.0109 +/- 0.0003 | 0.0098 +/- 0.0015 |
+| Ph->Mol R@5 | 0.0333 +/- 0.0009 | 0.0325 +/- 0.0015 | 0.0315 +/- 0.0021 |
+| Ph->Mol R@10 | 0.0515 +/- 0.0016 | 0.0502 +/- 0.0007 | 0.0498 +/- 0.0048 |
+
+Neither modified loss produced a stable overall improvement over vanilla. Structure-aware weighting improved several metrics for some seeds, but it also increased seed-to-seed variance substantially.
+
+The full experiment history, including the earlier soft-target attempt, alpha comparison, regularization test, multi-seed tables, and failure analysis, is recorded in [`experiments/similarity_aware_loss.md`](experiments/similarity_aware_loss.md).
+
+## Failure analysis
+
+The negative result suggests three main limitations:
+
+1. **Similarity is not biological equivalence.** Phenotype similarity does not guarantee the same mechanism, and structural similarity does not guarantee the same phenotype or activity.
+2. **Similarity preservation can conflict with exact-pair retrieval.** Recall@K rewards the unique matched molecule-phenotype pair, while a similar but non-matching sample is still an incorrect retrieval.
+3. **False negatives may not be the main bottleneck.** Extremely high-similarity negatives are rare, and the vanilla model already preserves part of the similarity structure.
+
+The main conclusion is that similarity alone is not sufficient to identify harmful false negatives.
 
 ## Dependencies
 
@@ -152,5 +202,7 @@ torch
 - [x] Recall@1 / Recall@5 / Recall@10 baseline
 - [x] Controlled vanilla-baseline hyperparameter tuning
 - [x] False-negative analysis
-- [ ] Phenotype-aware contrastive loss
-- [ ] Ablation and robustness experiments
+- [x] Phenotype-aware contrastive loss
+- [x] Structure-aware negative weighting
+- [x] Three-seed robustness experiments
+- [x] Failure analysis
