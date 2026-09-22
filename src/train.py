@@ -2,10 +2,13 @@ import torch
 
 from data import load_data
 from model import DualEncoder
-from loss import contrastive_loss
+from loss import contrastive_loss, phenotype_aware_loss, structure_aware_loss
 
 
-def train(epochs = 20, batch = 32, lr = 1e-3):
+def train(epochs = 20, batch = 32, lr = 1e-3, seed = 2):
+
+    torch.manual_seed(seed)
+
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -25,7 +28,7 @@ def train(epochs = 20, batch = 32, lr = 1e-3):
     model = DualEncoder(mol_dim, ph_dim)
     model = model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr,weight_decay=1e-4)
 
     best_val_loss = float("inf")
 
@@ -39,12 +42,13 @@ def train(epochs = 20, batch = 32, lr = 1e-3):
 
             optimizer.zero_grad()
             z_mol, z_ph = model(x_mol, x_ph)
-            loss = contrastive_loss(z_mol, z_ph)
+            loss = structure_aware_loss(z_mol, z_ph, x_mol)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
 
         avg_loss = total_loss / len(train_loader)
+
 
         model.eval()
         val_total_loss = 0
@@ -54,7 +58,7 @@ def train(epochs = 20, batch = 32, lr = 1e-3):
                 x_mol = x_mol.to(device)
                 x_ph = x_ph.to(device)
                 z_mol, z_ph = model(x_mol, x_ph)
-                val_loss = contrastive_loss(z_mol, z_ph)
+                val_loss = structure_aware_loss(z_mol, z_ph, x_mol)
                 val_total_loss += val_loss.item()
 
         val_avg_loss = val_total_loss / len(val_loader)
