@@ -1,16 +1,17 @@
-from locale import normalize
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+Embedding_dim = 128
+Hidden_dim = 512
+
 class MLPEncoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim=512, output_dim=128):
+    def __init__(self, input_dim, hidden_dim=Hidden_dim, output_dim=Embedding_dim):
         super().__init__()
 
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(0),
             nn.Linear(hidden_dim, output_dim)
         )
 
@@ -20,7 +21,7 @@ class MLPEncoder(nn.Module):
         return z
 
 class DualEncoder(nn.Module):
-    def __init__(self, mol_dim, ph_dim, hidden_dim = 512, output_dim=128):
+    def __init__(self, mol_dim, ph_dim, hidden_dim = Hidden_dim, output_dim=Embedding_dim):
         super().__init__()
 
         self.mol_encoder = MLPEncoder(mol_dim, hidden_dim, output_dim)
