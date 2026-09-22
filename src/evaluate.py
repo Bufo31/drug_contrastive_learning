@@ -16,7 +16,7 @@ def evaluate(batch_size=32):
 
     model = DualEncoder(mol_dim, ph_dim).to(device)
 
-    model.load_state_dict(torch.load("best_model.pt", map_location=device))
+    model.load_state_dict(torch.load("best_model.pt",map_location=device))
 
     model.eval()
 
